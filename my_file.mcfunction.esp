@@ -1,1 +1,5 @@
-function *{execute if entity @a run function *{say Created using escratsou!}*}*
+execute as @a run function *{
+	say Created using escratsou!
+}*
+
+say Hello World!

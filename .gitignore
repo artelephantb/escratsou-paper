@@ -180,5 +180,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Mac
+.DS_Store
+
 # Escratsou
 output

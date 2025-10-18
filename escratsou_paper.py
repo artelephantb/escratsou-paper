@@ -70,7 +70,10 @@ class Compiler:
 		output_path = os.path.abspath(self.output_path)
 
 		if self.overide:
-			shutil.rmtree(output_path)
+			try:
+				shutil.rmtree(output_path)
+			except FileNotFoundError:
+				pass
 		os.mkdir(output_path)
 
 		for file in self.files:
