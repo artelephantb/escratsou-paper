@@ -1,5 +1,5 @@
-from escratsou_paper import Commandizer
+from escratsou_paper import Compiler
 
-commandizer = Commandizer('my_datapack')
+compiler = Compiler()
 
-print(commandizer.convert('function *{execute if entity @a run function *{say Created using escratsou!}*}*', 'main'))
+compiler.compile('function *{execute if entity @a run function *{say Created using escratsou!}*}*', 'main', 'my_datapack:', overide=True)

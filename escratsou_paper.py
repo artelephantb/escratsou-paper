@@ -1,15 +1,21 @@
+import os
+import shutil
+
+
 INNER_COMMAND_START = '*{'
 INNER_COMMAND_END = '}*'
 
 
-class Commandizer:
-	def __init__(self, namespace: str):
-		self.namespace = namespace
+class Compiler:
+	def __init__(self):
 		self.main_file_name = ''
 
 		self.code = ''
 		self.character_index = 0
 		self.main_file = ''
+		self.display_path = ''
+		self.output_path = ''
+		self.overide = False
 
 		self.files = []
 
@@ -17,30 +23,30 @@ class Commandizer:
 		sub_file = ''
 		while self.character_index < len(self.code):
 			character = self.code[self.character_index]
-			if character == INNER_COMMAND_START[0] and self.code[self.character_index + 1] == INNER_COMMAND_START[1]:
+			try:
+				next_character = self.code[self.character_index + 1]
+			except IndexError:
+				next_character = ''
+
+			if character == INNER_COMMAND_START[0] and next_character == INNER_COMMAND_START[1]:
 				self.character_index += 2
 				sub_file += self.inner_command()
 				self.character_index += 1
-			elif character == INNER_COMMAND_END[0] and self.code[self.character_index + 1] == INNER_COMMAND_END[1]:
+			elif character == INNER_COMMAND_END[0] and next_character == INNER_COMMAND_END[1]:
 				break
 			else:
 				sub_file += character
 			self.character_index += 1
 
-		random_name = f'inner_{self.main_file_name}_{str(self.character_index)}'
-		namespace_name = f'{self.namespace}:{random_name}'
+		file_name = f'inner_{self.main_file_name}_{str(self.character_index)}'
+		display_name = self.display_path + file_name
 
-		self.files.append({'path': namespace_name, 'content': sub_file})
-		return namespace_name
+		self.files.append({'path': file_name, 'content': sub_file})
+		return display_name
 
-	def convert(self, code: str, main_file_name: str):
-		self.code = code
-		self.main_file_name = main_file_name
-
+	def convert(self):
 		self.character_index = 0
 		self.main_file = ''
-
-		self.files = []
 
 		while self.character_index < len(self.code):
 			character = self.code[self.character_index]
@@ -59,4 +65,26 @@ class Commandizer:
 			self.character_index += 1
 
 		self.files.append({'path': self.main_file_name, 'content': self.main_file})
-		return self.files
+
+	def write_files(self):
+		output_path = os.path.abspath(self.output_path)
+
+		if self.overide:
+			shutil.rmtree(output_path)
+		os.mkdir(output_path)
+
+		for file in self.files:
+			print(file)
+
+	def compile(self, code: str, main_file_name: str, display_path: str, output_path='output', overide=False):
+		self.code = code
+		self.main_file_name = main_file_name
+		self.display_path = display_path
+
+		self.output_path = output_path
+		self.overide = overide
+
+		self.files = []
+
+		self.convert()
+		self.write_files()
