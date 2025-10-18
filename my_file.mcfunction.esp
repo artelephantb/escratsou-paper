@@ -1,0 +1,1 @@
+function *{execute if entity @a run function *{say Created using escratsou!}*}*

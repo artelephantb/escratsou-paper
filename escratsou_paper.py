@@ -74,11 +74,12 @@ class Compiler:
 		os.mkdir(output_path)
 
 		for file in self.files:
-			with open(f'{output_path}/{file['path']}' + '.mcfunction', 'x') as opened_file:
+			with open(f'{output_path}/{file['path']}.{self.extension}', 'x') as opened_file:
 				opened_file.write(file['content'])
 
-	def compile(self, code: str, main_file_name: str, display_path: str, output_path='output', overide=False):
+	def compile(self, code: str, extension: str, main_file_name: str, display_path: str, output_path='output', overide=False):
 		self.code = code
+		self.extension = extension
 		self.main_file_name = main_file_name
 		self.display_path = display_path
 
