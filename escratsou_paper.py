@@ -1,5 +1,8 @@
+import sys
 import os
 import shutil
+
+import yaml
 
 
 INNER_COMMAND_START = '*{'
@@ -15,9 +18,12 @@ class Compiler:
 		self.main_file = ''
 		self.display_path = ''
 		self.output_path = ''
+		self.output_name = ''
 		self.overide = False
+		self.extension = 'mcfunction'
 
 		self.files = []
+		self.compiled_files = []
 
 	def inner_command(self):
 		sub_file = ''
@@ -41,7 +47,7 @@ class Compiler:
 		file_name = f'inner_{self.main_file_name}_{str(self.character_index)}'
 		display_name = self.display_path + file_name
 
-		self.files.append({'path': file_name, 'content': sub_file})
+		self.compiled_files.append({'path': file_name, 'content': sub_file})
 		return display_name
 
 	def convert(self):
@@ -64,7 +70,7 @@ class Compiler:
 
 			self.character_index += 1
 
-		self.files.append({'path': self.main_file_name, 'content': self.main_file})
+		self.compiled_files.append({'path': self.main_file_name, 'content': self.main_file})
 
 	def write_files(self):
 		output_path = os.path.abspath(self.output_path)
@@ -76,20 +82,47 @@ class Compiler:
 				pass
 		os.mkdir(output_path)
 
-		for file in self.files:
+		for file in self.compiled_files:
 			with open(f'{output_path}/{file['path']}.{self.extension}', 'x') as opened_file:
 				opened_file.write(file['content'])
 
-	def compile(self, code: str, extension: str, main_file_name: str, display_path: str, output_path='output', overide=False):
-		self.code = code
-		self.extension = extension
-		self.main_file_name = main_file_name
-		self.display_path = display_path
+	def loop_file(self, file, name):
+		split_file_name = name.split('.')
+		if split_file_name[-1] != 'esp':
+			return
+
+		with open(file, 'r') as opened_file:
+			file_content = opened_file.read()
+
+		self.files.append({'name': split_file_name[0], 'content': file_content})
+
+	def loop_folder(self, folder):
+		for file in os.listdir(folder):
+			current_file = os.path.join(folder, file)
+			if os.path.isfile(current_file):
+				self.loop_file(current_file, file)
+			else:
+				self.loop_folder(current_file)
+
+	def compile(self, path, output_path='output', overide=False):
+		config_file = os.path.join(path, 'config.yml')
+		with open(config_file, 'r') as opened_config_file:
+			config = yaml.safe_load(opened_config_file)
+
+		self.display_path = config['name'] + ':'
 
 		self.output_path = output_path
+		self.output_name = f'{config['display_name']}_{config['format']}'
 		self.overide = overide
 
 		self.files = []
+		self.compiled_files = []
 
-		self.convert()
+		self.loop_folder(path)
+
+		for code in self.files:
+			self.code = code['content']
+			self.main_file_name = code['name']
+			self.convert()
+
 		self.write_files()

@@ -1,5 +1,0 @@
-execute as @a run function *{
-	say Created using escratsou!
-}*
-
-say Hello World!
