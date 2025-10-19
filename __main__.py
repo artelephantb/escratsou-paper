@@ -1,5 +1,8 @@
 from escratsou_paper import Compiler
+import sys
 
+
+input_directory = sys.argv[1]
 
 compiler = Compiler()
-compiler.compile('demos/01', overide=True)
+compiler.compile(input_directory, overide=True)
