@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 
@@ -125,3 +126,10 @@ class Compiler:
 			self.convert()
 
 		self.write_files()
+
+
+if __name__ == '__main__':
+	input_directory = sys.argv[1]
+
+	compiler = Compiler()
+	compiler.compile(input_directory, overide=True)
