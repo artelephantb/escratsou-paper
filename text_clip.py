@@ -1,19 +1,18 @@
-######################################################
-#
-# Paper Clip (Commit 6), Under MIT liscense at https://github.com/artelephantb/paper-clip
-#
-######################################################
+def about():
+	return 'Text Clip is a single-file libary used to add custom elements to other formats. Under MIT liscense at https://github.com/artelephantb/text-clip'
 
-class PaperClip:
-	def __init__(self, sub_cue_start: str, sub_cue_end: str, on_sub_paper_export, on_paper_export):
+class TextClip:
+	def _default_sub_paper_finished_method(content):
+		return content
+
+	def __init__(self, sub_cue_start: str, sub_cue_end: str):
 		self.sub_cue_start = sub_cue_start
 		self.sub_cue_end = sub_cue_end
-		self.on_sub_paper_export = on_sub_paper_export
-		self.on_paper_export = on_paper_export
 
-		self.papers = []
 		self.current_paper = ''
 		self.index = 0
+
+		self.sub_paper_finished_method = self._default_sub_paper_finished_method
 
 		self.counter = 0
 
@@ -31,7 +30,7 @@ class PaperClip:
 
 		return True
 
-	def get_sub_paper(self):
+	def structurize_sub_paper(self):
 		combined_list = []
 		combined = ''
 
@@ -41,7 +40,7 @@ class PaperClip:
 				combined = ''
 
 				self.index += len(self.sub_cue_start)
-				combined_list.append(self.get_sub_paper())
+				combined_list.append(self.structurize_sub_paper())
 			elif self.is_cue(self.sub_cue_end):
 				self.index += len(self.sub_cue_end) - 1
 				if len(combined) > 0:
@@ -55,31 +54,30 @@ class PaperClip:
 			combined_list.append(combined)
 		return combined_list
 
-	def get_paper(self, content: str):
+	def structurize_paper(self, content: str):
 		self.current_paper = content
 
 		self.index = 0
-		return self.get_sub_paper()
+		return self.structurize_sub_paper()
 
-	def add_paper(self, title: str, content: str):
-		self.papers.append([title, self.get_paper(content)])
-
-	def export_sub_paper(self, name: str, content: list):
+	def run_sub_paper(self, content: list):
 		combined = ''
 		for paper in content:
 			if type(paper) != list:
 				combined += paper
 				continue
-			sub_paper = self.export_sub_paper(name, paper)
-			combined += self.on_sub_paper_export(name, sub_paper)
+
+			sub_paper = self.run_sub_paper(paper)
+			combined += self.sub_paper_finished_method(sub_paper)
 
 			self.counter += 1
 
 		return combined
 
-	def export_papers(self):
-		for paper in self.papers:
-			self.counter = 0
-			sub_paper = self.export_sub_paper(paper[0], paper[1])
+	def run(self, content: str, sub_paper_finished_method=_default_sub_paper_finished_method):
+		self.sub_paper_finished_method = sub_paper_finished_method
 
-			self.on_paper_export(sub_paper)
+		structurized_content = self.structurize_paper(content)
+
+		self.counter = 0
+		return self.run_sub_paper(structurized_content)
