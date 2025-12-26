@@ -24,7 +24,9 @@ class DatapackGenerator:
 
 	def __init__(self, replace_previous: bool = False):
 		self.clip = TextClip('${', '}$')
-		self.files = {}
+
+		self.main_file = ''
+		self.files = []
 
 		self.replace_previous = replace_previous
 
@@ -35,13 +37,13 @@ class DatapackGenerator:
 	def _on_sub_paper_finnished(self, content):
 		file_name = self.create_file_name()
 
-		self.files.update({file_name: content})
+		self.files.append([file_name, 'mcfunction', content])
 		return file_name
 
 
 	def convert(self, content: str):
 		main_file = self.clip.run(content, self._on_sub_paper_finnished)
-		self.files.update({'main': main_file})
+		self.main_file = main_file
 
 	def create_files(self, output_location: str):
 		pack_location = os.path.join(output_location, 'My Pack')
@@ -55,8 +57,13 @@ class DatapackGenerator:
 
 			os.mkdir(pack_location)
 
-		with open(os.path.join(pack_location, 'main.mcfunction'), 'x') as file:
-			file.write(self.files['main'])
+		# Create files
+		with open(os.path.join(pack_location, 'main.mcfunction'), 'x') as final_file:
+			final_file.write(self.main_file)
+
+		for file in self.files:
+			with open(os.path.join(pack_location, f'{file[0]}.{file[1]}'), 'x') as final_file:
+				final_file.write(file[2])
 
 	def generate(self, content: str, output_location: str):
 		'''
