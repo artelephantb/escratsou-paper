@@ -24,9 +24,7 @@ class DatapackGenerator:
 
 	def __init__(self, replace_previous: bool = False):
 		self.clip = TextClip('${', '}$')
-
-		self.main_file = ''
-		self.files = []
+		self.functions = []
 
 		self.replace_previous = replace_previous
 
@@ -37,13 +35,13 @@ class DatapackGenerator:
 	def _on_sub_paper_finnished(self, content):
 		file_name = self.create_file_name()
 
-		self.files.append([file_name, 'mcfunction', content])
-		return 'my-pack:' + file_name
+		self.functions.append([file_name, 'mcfunction', content])
+		return file_name
 
-
-	def convert(self, content: str):
-		main_file = self.clip.run(content, self._on_sub_paper_finnished)
-		self.main_file = main_file
+	def convert(self, content: dict):
+		for key in content.keys():
+			main_file = self.clip.run(content[key], self._on_sub_paper_finnished)
+			self.functions.append([key, 'mcfunction', main_file])
 
 
 	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
@@ -87,20 +85,17 @@ class DatapackGenerator:
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
 
-		with open(os.path.join(pack_location, 'data', 'my-pack', 'function', 'main.mcfunction'), 'x') as final_file:
-			final_file.write(self.main_file)
-
-		for file in self.files:
+		for file in self.functions:
 			with open(os.path.join(pack_location, 'data', 'my-pack', 'function', f'{file[0]}.{file[1]}'), 'x') as final_file:
 				final_file.write(file[2])
 
 
-	def generate(self, content: str, output_location: str):
+	def generate(self, content: dict, output_location: str):
 		'''
 		Converts string to datapack, then written to output location
 
-		:param content: String to be converted to datapack
-		:type content: str
+		:param content: Dictionary to be converted to datapack
+		:type content: dict
 
 		:param output_location: Location to output datapack
 		:type output_location: str
@@ -111,4 +106,4 @@ class DatapackGenerator:
 
 
 datapack_generator = DatapackGenerator(replace_previous=True)
-datapack_generator.generate('function ${say Hello!}$', 'output')
+datapack_generator.generate({'main': 'function my-pack:${say Hello!}$'}, 'output')
