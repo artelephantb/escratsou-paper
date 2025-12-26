@@ -1,5 +1,7 @@
 from text_clip import TextClip
 
+import yaml
+
 import os
 from shutil import rmtree
 
@@ -106,4 +108,7 @@ class DatapackGenerator:
 
 
 datapack_generator = DatapackGenerator(replace_previous=True)
-datapack_generator.generate({'main': 'function my-pack:${say Hello!}$'}, 'output')
+
+with open('demos/my-pack.esp', 'r') as file:
+	pack = yaml.safe_load(file)
+datapack_generator.generate(pack['functions'], 'output')
