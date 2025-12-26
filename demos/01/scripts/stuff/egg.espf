@@ -1,3 +1,0 @@
-execute as @a run function *{
-	give @s egg 1
-}*

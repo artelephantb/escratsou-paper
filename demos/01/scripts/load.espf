@@ -1,2 +1,0 @@
-tellraw @a {'text':'Hello World!'}
-tellraw @a {'text':'Try \'/function demo_0:stuff/egg\' for a surprise!'}

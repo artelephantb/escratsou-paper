@@ -1,4 +1,0 @@
-execute as @a run function *{
-	effect give @s invisibility 1 1 true
-	effect give @s jump_boost 1 1 true
-}*
