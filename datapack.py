@@ -38,7 +38,7 @@ class DatapackGenerator:
 		file_name = self.create_file_name()
 
 		self.files.append([file_name, 'mcfunction', content])
-		return file_name
+		return 'my-pack:' + file_name
 
 
 	def convert(self, content: str):
@@ -64,11 +64,13 @@ class DatapackGenerator:
 		'''
 
 		content = {'pack': {'min_format': min_format, 'max_format': max_format, 'description': description}}
+		content = str(content).replace('\'', '"')
+
 		with open(location, 'x') as final_file:
-			final_file.write(str(content))
+			final_file.write(content)
 
 
-	def create_files(self, output_location: str):
+	def export(self, output_location: str):
 		pack_location = os.path.join(output_location, 'My Pack')
 		try:
 			os.mkdir(pack_location)
@@ -80,14 +82,16 @@ class DatapackGenerator:
 
 			os.mkdir(pack_location)
 
+		os.makedirs(os.path.join(pack_location, 'data', 'my-pack', 'function'))
+
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
 
-		with open(os.path.join(pack_location, 'main.mcfunction'), 'x') as final_file:
+		with open(os.path.join(pack_location, 'data', 'my-pack', 'function', 'main.mcfunction'), 'x') as final_file:
 			final_file.write(self.main_file)
 
 		for file in self.files:
-			with open(os.path.join(pack_location, f'{file[0]}.{file[1]}'), 'x') as final_file:
+			with open(os.path.join(pack_location, 'data', 'my-pack', 'function', f'{file[0]}.{file[1]}'), 'x') as final_file:
 				final_file.write(file[2])
 
 
@@ -103,7 +107,7 @@ class DatapackGenerator:
 		'''
 
 		self.convert(content)
-		self.create_files(output_location)
+		self.export(output_location)
 
 
 datapack_generator = DatapackGenerator(replace_previous=True)
