@@ -45,6 +45,29 @@ class DatapackGenerator:
 		main_file = self.clip.run(content, self._on_sub_paper_finnished)
 		self.main_file = main_file
 
+
+	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
+		'''
+		Writes a pack.mcmeta file
+
+		:param location: Location of the pack.mcmeta
+		:type location: str
+
+		:param min_format: The minimum datapack version supported
+		:type min_format: int
+
+		:param max_format: The maximum datapack version supported
+		:type max_format: int
+
+		:param description: Description of the pack
+		:type description: str | list
+		'''
+
+		content = {'pack': {'min_format': min_format, 'max_format': max_format, 'description': description}}
+		with open(location, 'x') as final_file:
+			final_file.write(str(content))
+
+
 	def create_files(self, output_location: str):
 		pack_location = os.path.join(output_location, 'My Pack')
 		try:
@@ -58,12 +81,15 @@ class DatapackGenerator:
 			os.mkdir(pack_location)
 
 		# Create files
+		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
+
 		with open(os.path.join(pack_location, 'main.mcfunction'), 'x') as final_file:
 			final_file.write(self.main_file)
 
 		for file in self.files:
 			with open(os.path.join(pack_location, f'{file[0]}.{file[1]}'), 'x') as final_file:
 				final_file.write(file[2])
+
 
 	def generate(self, content: str, output_location: str):
 		'''
