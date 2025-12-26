@@ -5,6 +5,10 @@ from shutil import rmtree
 
 
 class DatapackExistsError(Exception):
+	'''
+	Outputs an error for when a datapack already exists in a location
+	'''
+
 	def __init__(self, message: str = 'Datapack already exists in output file location', location: str = None):
 		final_message = message
 		if location:
@@ -14,6 +18,10 @@ class DatapackExistsError(Exception):
 
 
 class DatapackGenerator:
+	'''
+	Generates a datapack from a string
+	'''
+
 	def __init__(self, replace_previous: bool = False):
 		self.clip = TextClip('${', '}$')
 		self.files = {}
@@ -50,7 +58,17 @@ class DatapackGenerator:
 		with open(os.path.join(pack_location, 'main.mcfunction'), 'x') as file:
 			file.write(self.files['main'])
 
-	def generate(self, content, output_location: str):
+	def generate(self, content: str, output_location: str):
+		'''
+		Converts string to datapack, then written to output location
+
+		:param content: String to be converted to datapack
+		:type content: str
+
+		:param output_location: Location to output datapack
+		:type output_location: str
+		'''
+
 		self.convert(content)
 		self.create_files(output_location)
 
