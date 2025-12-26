@@ -26,7 +26,9 @@ class DatapackGenerator:
 
 	def __init__(self, replace_previous: bool = False):
 		self.clip = TextClip('${', '}$')
+
 		self.functions = []
+		self.tags = []
 
 		self.replace_previous = replace_previous
 
@@ -40,10 +42,22 @@ class DatapackGenerator:
 		self.functions.append([file_name, 'mcfunction', content])
 		return file_name
 
-	def convert(self, content: dict):
-		for key in content.keys():
-			main_file = self.clip.run(content[key], self._on_sub_paper_finnished)
+	def convert_functions(self, functions: dict):
+		for key in functions.keys():
+			main_file = self.clip.run(functions[key], self._on_sub_paper_finnished)
 			self.functions.append([key, 'mcfunction', main_file])
+
+	def convert_events(self, events: dict):
+		try:
+			tag = events['on_load']
+
+			content = {'replace': False, 'values': ['my-pack:' + tag]}
+			content = str(content).replace('\'', '"')
+			content = str(content).replace('False', 'false')
+
+			self.tags.append(['load', content])
+		except KeyError:
+			pass
 
 
 	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
@@ -83,6 +97,7 @@ class DatapackGenerator:
 			os.mkdir(pack_location)
 
 		os.makedirs(os.path.join(pack_location, 'data', 'my-pack', 'function'))
+		os.makedirs(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function'))
 
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
@@ -91,8 +106,12 @@ class DatapackGenerator:
 			with open(os.path.join(pack_location, 'data', 'my-pack', 'function', f'{file[0]}.{file[1]}'), 'x') as final_file:
 				final_file.write(file[2])
 
+		for file in self.tags:
+			with open(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function', file[0] + '.json'), 'x') as final_file:
+				final_file.write(file[1])
 
-	def generate(self, content: dict, output_location: str):
+
+	def generate(self, functions: dict, events: dict, output_location: str):
 		'''
 		Converts string to datapack, then written to output location
 
@@ -103,7 +122,9 @@ class DatapackGenerator:
 		:type output_location: str
 		'''
 
-		self.convert(content)
+		self.convert_functions(functions)
+		self.convert_events(events)
+
 		self.export(output_location)
 
 
@@ -111,4 +132,4 @@ datapack_generator = DatapackGenerator(replace_previous=True)
 
 with open('demos/my-pack.esp', 'r') as file:
 	pack = yaml.safe_load(file)
-datapack_generator.generate(pack['functions'], 'output')
+datapack_generator.generate(pack['functions'], pack['events'], 'output')

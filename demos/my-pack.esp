@@ -1,2 +1,5 @@
 functions:
-    main: function my-pack:${say Hello!}$
+    load: function my-pack:${say Hello!}$
+
+events:
+    on_load: load
