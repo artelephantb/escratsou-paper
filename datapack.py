@@ -133,13 +133,23 @@ class DatapackGenerator:
 datapack_generator = DatapackGenerator(replace_previous=True)
 
 if __name__ == '__main__':
+	# Pack data
 	try:
 		pack_file = sys.argv[1]
 		print('Running file:', sys.argv[1])
 	except IndexError:
 		pack_file = 'demos/my-pack.esp'
-		print('Running demo (demos/my-pack.esp)')
+		print('Running demo: demos/my-pack.esp')
+
+	# Pack output
+	try:
+		output = sys.argv[2]
+		print('Using output directory:', sys.argv[2])
+	except IndexError:
+		output = 'output'
+		print('Using default output directory: output')
+
 
 	with open(pack_file, 'r') as file:
 		pack = yaml.safe_load(file)
-	datapack_generator.generate(pack['functions'], pack['events'], 'output')
+	datapack_generator.generate(pack['functions'], pack['events'], output)
