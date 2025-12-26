@@ -5,6 +5,8 @@ import yaml
 import os
 from shutil import rmtree
 
+import sys
+
 
 class DatapackExistsError(Exception):
 	'''
@@ -130,6 +132,14 @@ class DatapackGenerator:
 
 datapack_generator = DatapackGenerator(replace_previous=True)
 
-with open('demos/my-pack.esp', 'r') as file:
-	pack = yaml.safe_load(file)
-datapack_generator.generate(pack['functions'], pack['events'], 'output')
+if __name__ == '__main__':
+	try:
+		pack_file = sys.argv[1]
+		print('Running file:', sys.argv[1])
+	except IndexError:
+		pack_file = 'demos/my-pack.esp'
+		print('Running demo (demos/my-pack.esp)')
+
+	with open(pack_file, 'r') as file:
+		pack = yaml.safe_load(file)
+	datapack_generator.generate(pack['functions'], pack['events'], 'output')
