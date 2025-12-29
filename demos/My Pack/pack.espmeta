@@ -1,0 +1,8 @@
+generator: 'esp'
+
+mc_min: 94
+mc_max: 94
+
+description:
+    text: 'Demo Pack'
+    color: 'gold'

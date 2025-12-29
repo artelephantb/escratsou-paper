@@ -1,5 +1,0 @@
-functions:
-    load: function my-pack:${say Hello World!}$
-
-events:
-    on_load: load

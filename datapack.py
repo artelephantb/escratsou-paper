@@ -9,14 +9,19 @@ import sys
 
 
 class DatapackExistsError(Exception):
-	'''
-	Outputs an error for when a datapack already exists in a location
-	'''
-
 	def __init__(self, message: str = 'Datapack already exists in output file location', location: str = None):
 		final_message = message
 		if location:
 			final_message = f'{message}: "{location}"'
+
+		super().__init__(final_message)
+
+
+class InvalidPackGenerator(Exception):
+	def __init__(self, message: str = 'Pack generator id does not match this programs generator', generator: str = None):
+		final_message = message
+		if generator:
+			final_message = f'{message}: "{generator}"'
 
 		super().__init__(final_message)
 
@@ -97,7 +102,7 @@ class DatapackGenerator:
 			self.next_name += 1
 
 
-	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
+	def write_pack_meta_file(self, location: str, min_format: int, max_format: int, description: str | list | dict):
 		'''
 		Writes a pack.mcmeta file
 
@@ -121,7 +126,7 @@ class DatapackGenerator:
 			final_file.write(content)
 
 
-	def export(self, output_location: str):
+	def export(self, output_location: str, min_format: int, max_format: int, description: str | list | dict):
 		pack_location = os.path.join(output_location, 'My Pack')
 		try:
 			os.mkdir(pack_location)
@@ -136,7 +141,7 @@ class DatapackGenerator:
 		os.makedirs(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function'))
 
 		# Create files
-		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
+		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'), min_format, max_format, description)
 
 		for namespace in self.functions:
 			name = namespace[0]
@@ -153,7 +158,7 @@ class DatapackGenerator:
 			#		final_file.write(file[1])
 
 
-	def generate(self, functions: dict, events: dict, output_location: str):
+	def generate(self, input_location: str, output_location: str):
 		'''
 		Converts string to datapack, then written to output location
 
@@ -164,6 +169,17 @@ class DatapackGenerator:
 		:type output_location: str
 		'''
 
+		with open(os.path.join(input_location, 'pack.espmeta'), 'r') as file:
+			pack = yaml.safe_load(file)
+
+		escratsou_generator = pack['generator']
+		if escratsou_generator != 'esp':
+			raise InvalidPackGenerator(generator=pack['generator'])
+
+		min_format = pack['mc_min']
+		max_format = pack['mc_max']
+		description = pack['description']
+
 		for namespace in os.listdir('demos/My Pack/data'):
 			self.current_functions = []
 			self.current_namespace = namespace
@@ -173,7 +189,7 @@ class DatapackGenerator:
 
 			self.functions.append((namespace, self.current_functions))
 
-		self.export(output_location)
+		self.export(output_location, min_format, max_format, description)
 
 
 datapack_generator = DatapackGenerator(replace_previous=True)
@@ -184,8 +200,8 @@ if __name__ == '__main__':
 		pack_file = sys.argv[1]
 		print('Running file:', sys.argv[1])
 	except IndexError:
-		pack_file = 'demos/my-pack.esp'
-		print('Running demo: demos/my-pack.esp')
+		pack_file = 'demos/My Pack'
+		print('Running demo: demos/My Pack')
 
 	# Pack output
 	try:
@@ -196,6 +212,4 @@ if __name__ == '__main__':
 		print('Using default output directory: output')
 
 
-	with open(pack_file, 'r') as file:
-		pack = yaml.safe_load(file)
-	datapack_generator.generate(pack['functions'], pack['events'], output)
+	datapack_generator.generate(pack_file, output)
