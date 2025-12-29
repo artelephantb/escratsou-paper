@@ -32,6 +32,8 @@ class DatapackGenerator:
 		self.functions = []
 		self.tags = []
 
+		self.current_functions = []
+
 		self.next_name = 0
 
 		self.replace_previous = replace_previous
@@ -43,13 +45,13 @@ class DatapackGenerator:
 	def _on_sub_paper_finnished(self, content):
 		file_name = self.create_file_name()
 
-		self.functions.append([file_name, 'mcfunction', content])
+		self.current_functions.append([file_name, 'mcfunction', content])
 		return file_name
 
 	def convert_functions(self, functions: dict):
 		for key in functions.keys():
 			main_file = self.clip.run(functions[key], self._on_sub_paper_finnished)
-			self.functions.append([key + self.create_file_name(), 'mcfunction', main_file])
+			self.current_functions.append([key + self.create_file_name(), 'mcfunction', main_file])
 
 			self.next_name += 1
 
@@ -86,15 +88,12 @@ class DatapackGenerator:
 
 	def convert_files(self, path: str):
 		files = self.convert_sub_files_function(os.path.join(path, 'function'))
-		functions = []
 
 		for key in files.keys():
 			main_file = self.clip.run(files[key], self._on_sub_paper_finnished)
-			self.functions.append((key + self.create_file_name(), 'mcfunction', main_file))
+			self.current_functions.append((key + self.create_file_name(), 'mcfunction', main_file))
 
 			self.next_name += 1
-
-		return functions
 
 
 	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
@@ -133,19 +132,24 @@ class DatapackGenerator:
 
 			os.mkdir(pack_location)
 
-		os.makedirs(os.path.join(pack_location, 'data', 'my-pack', 'function'))
 		os.makedirs(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function'))
 
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'))
 
-		for file in self.functions:
-			with open(os.path.join(pack_location, 'data', 'my-pack', 'function', f'{file[0]}.{file[1]}'), 'x') as final_file:
-				final_file.write(file[2])
+		for namespace in self.functions:
+			name = namespace[0]
+			data = namespace[1]
 
-		for file in self.tags:
-			with open(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function', file[0] + '.json'), 'x') as final_file:
-				final_file.write(file[1])
+			os.makedirs(os.path.join(pack_location, f'data/{name}/function'))
+
+			for file in data:
+				with open(os.path.join(pack_location, f'data/{name}/function/{file[0]}.{file[1]}'), 'x') as final_file:
+					final_file.write(file[2])
+
+			#for file in data:
+			#	with open(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function', file[0] + '.json'), 'x') as final_file:
+			#		final_file.write(file[1])
 
 
 	def generate(self, functions: dict, events: dict, output_location: str):
@@ -162,7 +166,13 @@ class DatapackGenerator:
 		#self.convert_functions(functions)
 		#self.convert_events(events)
 
-		self.functions += self.convert_files('demos/My Pack/data/my-pack')
+		for namespace in os.listdir('demos/My Pack/data'):
+			self.current_functions = []
+
+			path = os.path.join('demos/My Pack/data', namespace)
+			self.convert_files(path)
+
+			self.functions.append((namespace, self.current_functions))
 
 		self.export(output_location)
 
