@@ -1,2 +1,2 @@
-function my-pack:${say Hello}$
-function my-pack:${say World!}$
+function ${say Hello}$
+function ${say World!}$

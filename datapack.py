@@ -33,6 +33,7 @@ class DatapackGenerator:
 		self.tags = []
 
 		self.current_functions = []
+		self.current_namespace = ''
 
 		self.next_name = 0
 
@@ -46,7 +47,7 @@ class DatapackGenerator:
 		file_name = self.create_file_name()
 
 		self.current_functions.append([file_name, 'mcfunction', content])
-		return file_name
+		return f'{self.current_namespace}:{file_name}'
 
 	def convert_functions(self, functions: dict):
 		for key in functions.keys():
@@ -163,11 +164,9 @@ class DatapackGenerator:
 		:type output_location: str
 		'''
 
-		#self.convert_functions(functions)
-		#self.convert_events(events)
-
 		for namespace in os.listdir('demos/My Pack/data'):
 			self.current_functions = []
+			self.current_namespace = namespace
 
 			path = os.path.join('demos/My Pack/data', namespace)
 			self.convert_files(path)
