@@ -32,11 +32,13 @@ class DatapackGenerator:
 		self.functions = []
 		self.tags = []
 
+		self.next_name = 0
+
 		self.replace_previous = replace_previous
 
 
 	def create_file_name(self):
-		return str(self.clip.counter)
+		return str(self.next_name) + '_' + str(self.clip.counter)
 
 	def _on_sub_paper_finnished(self, content):
 		file_name = self.create_file_name()
@@ -47,7 +49,9 @@ class DatapackGenerator:
 	def convert_functions(self, functions: dict):
 		for key in functions.keys():
 			main_file = self.clip.run(functions[key], self._on_sub_paper_finnished)
-			self.functions.append([key, 'mcfunction', main_file])
+			self.functions.append([key + self.create_file_name(), 'mcfunction', main_file])
+
+			self.next_name += 1
 
 	def convert_events(self, events: dict):
 		try:
@@ -60,6 +64,37 @@ class DatapackGenerator:
 			self.tags.append(['load', content])
 		except KeyError:
 			pass
+
+
+	def convert_sub_files_function(self, path: str):
+		contents = os.listdir(path)
+		functions = {}
+
+		for file in contents:
+			file_path = os.path.join(path, file)
+
+			if os.path.isdir(file_path):
+				functions.update(self.convert_sub_files_function(file_path))
+				continue
+
+			with open(file_path, 'r') as opened_file:
+				file_content = opened_file.read()
+
+			functions.update({file.removesuffix('.mcfunction'): file_content})
+
+		return functions
+
+	def convert_files(self, path: str):
+		files = self.convert_sub_files_function(os.path.join(path, 'function'))
+		functions = []
+
+		for key in files.keys():
+			main_file = self.clip.run(files[key], self._on_sub_paper_finnished)
+			self.functions.append((key + self.create_file_name(), 'mcfunction', main_file))
+
+			self.next_name += 1
+
+		return functions
 
 
 	def write_pack_meta_file(self, location: str, min_format: int = 94, max_format: int = 94, description: str | list = 'My Description'):
@@ -124,8 +159,10 @@ class DatapackGenerator:
 		:type output_location: str
 		'''
 
-		self.convert_functions(functions)
-		self.convert_events(events)
+		#self.convert_functions(functions)
+		#self.convert_events(events)
+
+		self.functions += self.convert_files('demos/My Pack/data/my-pack')
 
 		self.export(output_location)
 
