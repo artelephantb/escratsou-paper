@@ -126,8 +126,8 @@ class DatapackGenerator:
 			final_file.write(content)
 
 
-	def export(self, output_location: str, min_format: int, max_format: int, description: str | list | dict):
-		pack_location = os.path.join(output_location, 'My Pack')
+	def export(self, output_location: str, min_format: int, max_format: int, description: str | list | dict, output_name: str):
+		pack_location = os.path.join(output_location, output_name)
 		try:
 			os.mkdir(pack_location)
 		except FileExistsError:
@@ -138,7 +138,7 @@ class DatapackGenerator:
 
 			os.mkdir(pack_location)
 
-		os.makedirs(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function'))
+		os.makedirs(os.path.join(pack_location, 'data/minecraft/tags/function'))
 
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'), min_format, max_format, description)
@@ -153,17 +153,13 @@ class DatapackGenerator:
 				with open(os.path.join(pack_location, f'data/{name}/function/{file[0]}.{file[1]}'), 'x') as final_file:
 					final_file.write(file[2])
 
-			#for file in data:
-			#	with open(os.path.join(pack_location, 'data', 'minecraft', 'tags', 'function', file[0] + '.json'), 'x') as final_file:
-			#		final_file.write(file[1])
-
 
 	def generate(self, input_location: str, output_location: str):
 		'''
 		Converts string to datapack, then written to output location
 
-		:param content: Dictionary to be converted to datapack
-		:type content: dict
+		:param input_location: Path to be converted to datapack
+		:type content: str
 
 		:param output_location: Location to output datapack
 		:type output_location: str
@@ -176,20 +172,22 @@ class DatapackGenerator:
 		if escratsou_generator != 'esp':
 			raise InvalidPackGenerator(generator=pack['generator'])
 
+		output_name = pack['output_name']
+
 		min_format = pack['mc_min']
 		max_format = pack['mc_max']
 		description = pack['description']
 
-		for namespace in os.listdir('demos/My Pack/data'):
+		for namespace in os.listdir(f'{input_location}/data'):
 			self.current_functions = []
 			self.current_namespace = namespace
 
-			path = os.path.join('demos/My Pack/data', namespace)
+			path = os.path.join(f'{input_location}/data', namespace)
 			self.convert_files(path)
 
 			self.functions.append((namespace, self.current_functions))
 
-		self.export(output_location, min_format, max_format, description)
+		self.export(output_location, min_format, max_format, description, output_name)
 
 
 datapack_generator = DatapackGenerator(replace_previous=True)
