@@ -38,6 +38,8 @@ class DatapackGenerator:
 		self.tags = []
 
 		self.current_functions = []
+		self.current_tags = []
+
 		self.current_namespace = ''
 
 		self.file_translations = {}
@@ -79,7 +81,7 @@ class DatapackGenerator:
 			pass
 
 
-	def convert_sub_files_function(self, path: str):
+	def convert_sub_function_files(self, path: str):
 		contents = os.listdir(path)
 		functions = {}
 
@@ -87,7 +89,7 @@ class DatapackGenerator:
 			file_path = os.path.join(path, file)
 
 			if os.path.isdir(file_path):
-				functions.update(self.convert_sub_files_function(file_path))
+				functions.update(self.convert_sub_function_files(file_path))
 				continue
 
 			with open(file_path, 'r') as opened_file:
@@ -97,8 +99,8 @@ class DatapackGenerator:
 
 		return functions
 
-	def convert_files(self, path: str):
-		files = self.convert_sub_files_function(os.path.join(path, 'function'))
+	def convert_function_files(self, path: str):
+		files = self.convert_sub_function_files(os.path.join(path, 'function'))
 
 		for key in files.keys():
 			self.clip.sub_cue_start = '%{'
@@ -115,6 +117,50 @@ class DatapackGenerator:
 
 			self.next_name += 1
 
+	def convert_sub_tag_files(self, path: str):
+		contents = os.listdir(path)
+		tags = {}
+
+		for file in contents:
+			file_path = os.path.join(path, file)
+
+			if os.path.isdir(file_path):
+				tags.update(self.convert_sub_tag_files(file_path))
+				continue
+
+			with open(file_path, 'r') as opened_file:
+				file_content = opened_file.read()
+
+			tags.update({file.removesuffix('.json'): file_content})
+
+		return tags
+
+	def convert_tag_files(self, path: str):
+		files = self.convert_sub_tag_files(os.path.join(path, 'tags'))
+
+		for key in files.keys():
+			self.clip.sub_cue_start = '%{'
+			self.clip.sub_cue_end = '}%'
+			main_file = self.clip.run(files[key], self._on_file_translation_finnished)
+
+			self.clip.sub_cue_start = '${'
+			self.clip.sub_cue_end = '}$'
+			main_file = self.clip.run(main_file, self._on_sub_paper_finnished)
+
+			self.current_tags.append((key, 'json', main_file))
+
+			self.next_name += 1
+
+	def convert_files(self, path: str):
+		try:
+			self.convert_function_files(path)
+		except FileNotFoundError:
+			pass
+
+		try:
+			self.convert_tag_files(path)
+		except FileNotFoundError:
+			pass
 
 	def write_pack_meta_file(self, location: str, min_format: int, max_format: int, description: str | list | dict):
 		'''
@@ -152,8 +198,6 @@ class DatapackGenerator:
 
 			os.mkdir(pack_location)
 
-		os.makedirs(os.path.join(pack_location, 'data/minecraft/tags/function'))
-
 		# Create files
 		self.write_pack_meta_file(os.path.join(pack_location, 'pack.mcmeta'), min_format, max_format, description)
 
@@ -165,6 +209,16 @@ class DatapackGenerator:
 
 			for file in data:
 				with open(os.path.join(pack_location, f'data/{name}/function/{file[0]}.{file[1]}'), 'x') as final_file:
+					final_file.write(file[2])
+
+		for namespace in self.tags:
+			name = namespace[0]
+			data = namespace[1]
+
+			os.makedirs(os.path.join(pack_location, f'data/{name}/tags/function'))
+
+			for file in data:
+				with open(os.path.join(pack_location, f'data/{name}/tags/function/{file[0]}.{file[1]}'), 'x') as final_file:
 					final_file.write(file[2])
 
 
@@ -194,12 +248,15 @@ class DatapackGenerator:
 
 		for namespace in os.listdir(f'{input_location}/data'):
 			self.current_functions = []
+			self.current_tags = []
+
 			self.current_namespace = namespace
 
 			path = os.path.join(f'{input_location}/data', namespace)
 			self.convert_files(path)
 
 			self.functions.append((namespace, self.current_functions))
+			self.tags.append((namespace, self.current_tags))
 
 		self.export(output_location, min_format, max_format, description, output_name)
 
