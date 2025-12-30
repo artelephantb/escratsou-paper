@@ -1,1 +1,1 @@
-function my-pack:world
+function my-pack:%{world}%

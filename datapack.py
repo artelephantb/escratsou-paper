@@ -40,6 +40,8 @@ class DatapackGenerator:
 		self.current_functions = []
 		self.current_namespace = ''
 
+		self.file_translations = {}
+
 		self.next_name = 0
 
 		self.replace_previous = replace_previous
@@ -53,6 +55,9 @@ class DatapackGenerator:
 
 		self.current_functions.append([file_name, 'mcfunction', content])
 		return f'{self.current_namespace}:{file_name}'
+
+	def _on_file_translation_finnished(self, content):
+		return self.file_translations[content]
 
 	def convert_functions(self, functions: dict):
 		for key in functions.keys():
@@ -96,8 +101,17 @@ class DatapackGenerator:
 		files = self.convert_sub_files_function(os.path.join(path, 'function'))
 
 		for key in files.keys():
-			main_file = self.clip.run(files[key], self._on_sub_paper_finnished)
-			self.current_functions.append((key + self.create_file_name(), 'mcfunction', main_file))
+			self.clip.sub_cue_start = '%{'
+			self.clip.sub_cue_end = '}%'
+			main_file = self.clip.run(files[key], self._on_file_translation_finnished)
+
+			self.clip.sub_cue_start = '${'
+			self.clip.sub_cue_end = '}$'
+			main_file = self.clip.run(main_file, self._on_sub_paper_finnished)
+
+			name = key + self.create_file_name()
+			self.file_translations[key] = name
+			self.current_functions.append((name, 'mcfunction', main_file))
 
 			self.next_name += 1
 
