@@ -221,6 +221,10 @@ class DatapackGenerator:
 				with open(os.path.join(pack_location, f'data/{name}/tags/function/{file[0]}.{file[1]}'), 'x') as final_file:
 					final_file.write(file[2])
 
+		# Create Notice
+		with open(os.path.join(pack_location, 'NOTICE.md'), 'x') as notice_file:
+			notice_file.write('''This datapack should not be edited directly, names and file structures had been changed drastically by Escratsou Paper.''')
+
 
 	def generate(self, input_location: str, output_location: str):
 		'''
