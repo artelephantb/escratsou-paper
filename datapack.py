@@ -9,6 +9,20 @@ from shutil import rmtree
 import sys
 
 
+def split_path(path: str):
+	'''
+	Splits path into file name and extension
+	
+	:param path: Path to split
+	:type path: str
+	'''
+
+	file_name, file_extension = os.path.splitext(path)
+	file_extension = file_extension.removeprefix('.')
+
+	return file_name, file_extension
+
+
 class DatapackExistsError(Exception):
 	def __init__(self, message: str = 'Datapack already exists in output file location', location: str = None):
 		final_message = message
@@ -101,7 +115,7 @@ class DatapackGenerator:
 		files = self.get_all_files(os.path.join(path, 'function'))
 
 		for file, file_content in files:
-			file_name, file_extension = os.path.splitext(file)
+			file_name, file_extension = split_path(file)
 
 			main_file = self.clip_reference_translation(file_content)
 			main_file = self.clip_inline_function(main_file)
@@ -116,7 +130,7 @@ class DatapackGenerator:
 		files = self.get_all_files(os.path.join(path, 'tags'))
 
 		for file, file_content in files:
-			file_name, file_extension = os.path.splitext(file)
+			file_name, file_extension = split_path(file)
 
 			main_file = self.clip_reference_translation(file_content)
 			main_file = self.clip_inline_function(main_file)
