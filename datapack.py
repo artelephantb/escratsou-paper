@@ -1,6 +1,7 @@
 from text_clip import TextClip
 
 import yaml
+import json
 
 import os
 from shutil import rmtree
@@ -52,64 +53,57 @@ class DatapackGenerator:
 	def create_file_name(self):
 		return str(self.next_name) + '_' + str(self.clip.counter)
 
+
 	def _on_sub_paper_finnished(self, content):
 		file_name = self.create_file_name()
 
-		self.current_functions.append([file_name, 'mcfunction', content])
+		self.current_functions.append((file_name, 'mcfunction', content))
 		return f'{self.current_namespace}:{file_name}'
 
-	def _on_file_translation_finnished(self, content):
+	def _on_reference_translation_finnished(self, content):
 		return self.file_translations[content]
 
-	def convert_functions(self, functions: dict):
-		for key in functions.keys():
-			main_file = self.clip.run(functions[key], self._on_sub_paper_finnished)
-			self.current_functions.append([key + self.create_file_name(), 'mcfunction', main_file])
 
-			self.next_name += 1
+	def clip_reference_translation(self, content: str):
+		self.clip.sub_cue_start = '%{'
+		self.clip.sub_cue_end = '}%'
+		output = self.clip.run(content, self._on_reference_translation_finnished)
 
-	def convert_events(self, events: dict):
-		try:
-			tag = events['on_load']
+		return output
 
-			content = {'replace': False, 'values': ['my-pack:' + tag]}
-			content = str(content).replace('\'', '"')
-			content = str(content).replace('False', 'false')
+	def clip_inline_function(self, content: str):
+		self.clip.sub_cue_start = '${'
+		self.clip.sub_cue_end = '}$'
+		output = self.clip.run(content, self._on_sub_paper_finnished)
 
-			self.tags.append(['load', content])
-		except KeyError:
-			pass
+		return output
 
 
-	def convert_sub_function_files(self, path: str):
+	def get_all_files(self, path: str):
 		contents = os.listdir(path)
-		functions = {}
+		files = {}
 
 		for file in contents:
 			file_path = os.path.join(path, file)
 
 			if os.path.isdir(file_path):
-				functions.update(self.convert_sub_function_files(file_path))
+				files.update(self.get_all_files(file_path))
 				continue
 
 			with open(file_path, 'r') as opened_file:
 				file_content = opened_file.read()
 
-			functions.update({file.removesuffix('.mcfunction'): file_content})
+			file_name, file_extension = os.path.splitext(file)
+			files.update({file_name: file_content})
 
-		return functions
+		return files
 
 	def convert_function_files(self, path: str):
-		files = self.convert_sub_function_files(os.path.join(path, 'function'))
+		files = self.get_all_files(os.path.join(path, 'function'))
 
 		for key in files.keys():
-			self.clip.sub_cue_start = '%{'
-			self.clip.sub_cue_end = '}%'
-			main_file = self.clip.run(files[key], self._on_file_translation_finnished)
-
-			self.clip.sub_cue_start = '${'
-			self.clip.sub_cue_end = '}$'
-			main_file = self.clip.run(main_file, self._on_sub_paper_finnished)
+			main_file = self.clip_reference_translation(files[key])
+			main_file = self.clip_inline_function(main_file)
 
 			name = key + self.create_file_name()
 			self.file_translations[key] = name
@@ -117,35 +111,12 @@ class DatapackGenerator:
 
 			self.next_name += 1
 
-	def convert_sub_tag_files(self, path: str):
-		contents = os.listdir(path)
-		tags = {}
-
-		for file in contents:
-			file_path = os.path.join(path, file)
-
-			if os.path.isdir(file_path):
-				tags.update(self.convert_sub_tag_files(file_path))
-				continue
-
-			with open(file_path, 'r') as opened_file:
-				file_content = opened_file.read()
-
-			tags.update({file.removesuffix('.json'): file_content})
-
-		return tags
-
 	def convert_tag_files(self, path: str):
-		files = self.convert_sub_tag_files(os.path.join(path, 'tags'))
+		files = self.get_all_files(os.path.join(path, 'tags'))
 
 		for key in files.keys():
-			self.clip.sub_cue_start = '%{'
-			self.clip.sub_cue_end = '}%'
-			main_file = self.clip.run(files[key], self._on_file_translation_finnished)
-
-			self.clip.sub_cue_start = '${'
-			self.clip.sub_cue_end = '}$'
-			main_file = self.clip.run(main_file, self._on_sub_paper_finnished)
+			main_file = self.clip_reference_translation(files[key])
+			main_file = self.clip_inline_function(main_file)
 
 			self.current_tags.append((key, 'json', main_file))
 
@@ -161,6 +132,7 @@ class DatapackGenerator:
 			self.convert_tag_files(path)
 		except FileNotFoundError:
 			pass
+
 
 	def write_pack_meta_file(self, location: str, min_format: int, max_format: int, description: str | list | dict):
 		'''
@@ -222,8 +194,8 @@ class DatapackGenerator:
 					final_file.write(file[2])
 
 		# Create Notice
-		with open(os.path.join(pack_location, 'NOTICE.md'), 'x') as notice_file:
-			notice_file.write('''This datapack should not be edited directly, names and file structures had been changed drastically by Escratsou Paper.''')
+		with open(os.path.join(pack_location, 'NOTICE.txt'), 'x') as notice_file:
+			notice_file.write('''It is not recommended to edit or change this datapack directly, please use Escratsou Paper instead (requires source code access).''')
 
 
 	def generate(self, input_location: str, output_location: str):
@@ -265,9 +237,9 @@ class DatapackGenerator:
 		self.export(output_location, min_format, max_format, description, output_name)
 
 
-datapack_generator = DatapackGenerator(replace_previous=True)
-
 if __name__ == '__main__':
+	datapack_generator = DatapackGenerator(replace_previous=True)
+
 	# Pack data
 	try:
 		pack_file = sys.argv[1]
