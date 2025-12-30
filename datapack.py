@@ -81,44 +81,47 @@ class DatapackGenerator:
 
 	def get_all_files(self, path: str):
 		contents = os.listdir(path)
-		files = {}
+		files = []
 
 		for file in contents:
 			file_path = os.path.join(path, file)
 
 			if os.path.isdir(file_path):
-				files.update(self.get_all_files(file_path))
+				files += self.get_all_files(file_path)
 				continue
 
 			with open(file_path, 'r') as opened_file:
 				file_content = opened_file.read()
 
-			file_name, file_extension = os.path.splitext(file)
-			files.update({file_name: file_content})
+			files.append((file, file_content))
 
 		return files
 
 	def convert_function_files(self, path: str):
 		files = self.get_all_files(os.path.join(path, 'function'))
 
-		for key in files.keys():
-			main_file = self.clip_reference_translation(files[key])
+		for file, file_content in files:
+			file_name, file_extension = os.path.splitext(file)
+
+			main_file = self.clip_reference_translation(file_content)
 			main_file = self.clip_inline_function(main_file)
 
-			name = key + self.create_file_name()
-			self.file_translations[key] = name
-			self.current_functions.append((name, 'mcfunction', main_file))
+			name = file_name + self.create_file_name()
+			self.file_translations[file_name] = name
+			self.current_functions.append((name, file_extension, main_file))
 
 			self.next_name += 1
 
 	def convert_tag_files(self, path: str):
 		files = self.get_all_files(os.path.join(path, 'tags'))
 
-		for key in files.keys():
-			main_file = self.clip_reference_translation(files[key])
+		for file, file_content in files:
+			file_name, file_extension = os.path.splitext(file)
+
+			main_file = self.clip_reference_translation(file_content)
 			main_file = self.clip_inline_function(main_file)
 
-			self.current_tags.append((key, 'json', main_file))
+			self.current_tags.append((file_name, file_extension, main_file))
 
 			self.next_name += 1
 
@@ -152,7 +155,7 @@ class DatapackGenerator:
 		'''
 
 		content = {'pack': {'min_format': min_format, 'max_format': max_format, 'description': description}}
-		content = str(content).replace('\'', '"')
+		content = json.dumps(content)
 
 		with open(location, 'x') as final_file:
 			final_file.write(content)
