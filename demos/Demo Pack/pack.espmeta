@@ -1,5 +1,5 @@
 generator: 'esp'
-output_name: 'My Pack'
+output_name: 'Demo Pack'
 
 mc_min: 94
 mc_max: 94

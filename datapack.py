@@ -7,6 +7,7 @@ import os
 from shutil import rmtree
 
 import sys
+import random
 
 
 def split_path(path: str):
@@ -22,6 +23,9 @@ def split_path(path: str):
 
 	return file_name, file_extension
 
+def generate_file_name(current_name: str = ''):
+	return current_name + str(random.randint(1000, 9999))
+
 
 class DatapackExistsError(Exception):
 	def __init__(self, message: str = 'Datapack already exists in output file location', location: str = None):
@@ -30,7 +34,6 @@ class DatapackExistsError(Exception):
 			final_message = f'{message}: "{location}"'
 
 		super().__init__(final_message)
-
 
 class InvalidPackGenerator(Exception):
 	def __init__(self, message: str = 'Pack generator id does not match this programs generator', generator: str = None):
@@ -42,15 +45,13 @@ class InvalidPackGenerator(Exception):
 
 
 class DatapackGenerator:
-	'''
-	Generates a datapack from a string
-	'''
-
 	def __init__(self, replace_previous: bool = False):
 		self.clip = TextClip('${', '}$')
 
 		self.functions = []
 		self.tags = []
+
+		self.indexed_files = {}
 
 		self.current_functions = []
 		self.current_tags = []
@@ -59,23 +60,20 @@ class DatapackGenerator:
 
 		self.file_translations = {}
 
-		self.next_name = 0
-
 		self.replace_previous = replace_previous
 
 
-	def create_file_name(self):
-		return str(self.next_name) + '_' + str(self.clip.counter)
-
-
 	def _on_sub_paper_finnished(self, content):
-		file_name = self.create_file_name()
+		file_name = generate_file_name()
 
 		self.current_functions.append((file_name, 'mcfunction', content))
 		return f'{self.current_namespace}:{file_name}'
 
 	def _on_reference_translation_finnished(self, content):
-		return self.file_translations[content]
+		try:
+			return self.file_translations[content]
+		except KeyError:
+			raise KeyError(f'Function \'{content}\' not found')
 
 
 	def clip_reference_translation(self, content: str):
@@ -92,6 +90,29 @@ class DatapackGenerator:
 
 		return output
 
+
+	def index_files(self, path: str):
+		contents = os.listdir(path)
+		index = {}
+
+		for file in contents:
+			file_path = os.path.join(path, file)
+
+			if os.path.isdir(file_path):
+				index.update({file: self.index_files(file_path)})
+				continue
+
+			with open(file_path, 'r') as opened_file:
+				file_content = opened_file.read()
+
+			file_name, file_extension = split_path(file)
+
+			translated_file_name = generate_file_name(file_name)
+			self.file_translations.update({file_name: translated_file_name})
+
+			index.update({translated_file_name: (file_content, file_extension)})
+
+		return index
 
 	def get_all_files(self, path: str):
 		contents = os.listdir(path)
@@ -120,11 +141,8 @@ class DatapackGenerator:
 			main_file = self.clip_reference_translation(file_content)
 			main_file = self.clip_inline_function(main_file)
 
-			name = file_name + self.create_file_name()
-			self.file_translations[file_name] = name
+			name = self.file_translations[file_name]
 			self.current_functions.append((name, file_extension, main_file))
-
-			self.next_name += 1
 
 	def convert_tag_files(self, path: str):
 		files = self.get_all_files(os.path.join(path, 'tags'))
@@ -136,8 +154,6 @@ class DatapackGenerator:
 			main_file = self.clip_inline_function(main_file)
 
 			self.current_tags.append((file_name, file_extension, main_file))
-
-			self.next_name += 1
 
 	def convert_files(self, path: str):
 		try:
@@ -239,6 +255,8 @@ class DatapackGenerator:
 		max_format = pack['mc_max']
 		description = pack['description']
 
+		self.indexed_files = self.index_files(input_location)
+
 		for namespace in os.listdir(f'{input_location}/data'):
 			self.current_functions = []
 			self.current_tags = []
@@ -262,8 +280,8 @@ if __name__ == '__main__':
 		pack_file = sys.argv[1]
 		print('Running file:', sys.argv[1])
 	except IndexError:
-		pack_file = 'demos/My Pack'
-		print('Running demo: demos/My Pack')
+		pack_file = 'demos/Demo Pack'
+		print('Running demo: demos/Demo Pack')
 
 	# Pack output
 	try:

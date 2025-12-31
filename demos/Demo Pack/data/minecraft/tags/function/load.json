@@ -1,6 +1,6 @@
 {
 	"replace": false,
 	"values": [
-		"my-pack:%{hello}%"
+		"demo:%{load}%"
 	]
 }
